@@ -1,10 +1,6 @@
 const { createServer } = require("http");
-const { parse } = require("path");
 const url = require("url");
 const emailPath = "/shohinalimov2008_gmail_com";
-
-const a = 12;
-const b = 18;
 
 function NOD(a, b) {
   while (b !== 0) {
