@@ -3,7 +3,7 @@ const url = require("url");
 const emailPath = "/shohinalimov2008_gmail_com";
 
 function NOD(a, b) {
-  while (b !== 0) {
+  while (b !== 0n) {
     [a, b] = [b, a % b];
   }
   return a;
@@ -17,20 +17,21 @@ const server = createServer((req, res) => {
   const parsed = url.parse(req.url, true);
 
   if (parsed.pathname === emailPath) {
-    let x = parseInt(parsed.query.x);
-    let y = parseInt(parsed.query.y);
+    try {
+      let x = BigInt(parsed.query.x);
+      let y = BigInt(parsed.query.y);
 
-    if (!Number.isInteger(x) || !Number.isInteger(y) || x <= 0 || y <= 0) {
+      if (x <= 0n || y <= 0n) {
+        res.end("NaN");
+      } else {
+        res.end(NOK(x, y).toString());
+      }
+    } catch (e) {
       res.end("NaN");
-      console.log("NaN");
-    } else {
-      res.end(NOK(x, y).toString());
-      console.log(NOK(x, y).toString());
     }
   } else {
     res.statusCode = 404;
     res.end("NaN");
-    console.log("NaN");
   }
 });
 
