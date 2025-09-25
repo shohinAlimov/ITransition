@@ -22,12 +22,15 @@ const server = createServer((req, res) => {
 
     if (!Number.isInteger(x) || !Number.isInteger(y) || x <= 0 || y <= 0) {
       res.end("NaN");
+      console.log("NaN");
     } else {
       res.end(NOK(x, y).toString());
+      console.log(NOK(x, y).toString());
     }
   } else {
     res.statusCode = 404;
     res.end("NaN");
+    console.log("NaN");
   }
 });
 
