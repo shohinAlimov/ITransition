@@ -9,52 +9,74 @@ class GameEngine {
     this.mortyType = mortyType;
     this.statistics = statistics;
 
-    this.secretKey = SecurityManagement.generateSecretKey();
-    this.mortyValue = SecurityManagement.generateRandomNumber(numBoxes) - 1;
-    this.hmac1 = SecurityManagement.getHmac(
-      this.secretKey,
-      this.mortyType.toString()
-    );
+    this.secretKey1 = null;
+    this.secretKey2 = null;
 
-    this.rickValue = null;
+    this.mortyValue1 = null;
+    this.mortyValue2 = null;
+
+    this.rickValue1 = null;
+    this.rickValue2 = null;
+
+    this.hmac1 = null;
     this.prizeBox = null;
-    this.rickInitialChoice = null;
+
+    this.rickValue2 = null;
     this.rickFinalChoice = null;
+
     this.toSave = null;
   }
 
   start() {
     console.log("\n===============================");
-    console.log("Ohh, Rick… hahahaha! Are you searching for your portal gun?");
-    console.log("I hid it in these boxes. Can you find it, uh?");
+    console.log(
+      `Ohh, Rick… hahahaha! I'm gonna hide your portal gun in one of the ${this.numBoxes} boxes!`
+    );
     console.log("===============================\n");
-    console.log(`HMAC1=\x1b[4m\x1b[33m${this.hmac1}\x1b[0m\n`);
+
+    this.secretKey1 = SecurityManagement.generateSecretKey();
+    this.mortyValue1 = SecurityManagement.generateRandomNumber(this.numBoxes);
+    this.hmac1 = SecurityManagement.getHmac(
+      this.secretKey1,
+      this.mortyValue1.toString()
+    );
 
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
     });
 
-    this.askRickValue(rl);
+    console.log(
+      `Morty: My number - HMAC1=\x1b[4m\x1b[33m${this.hmac1}\x1b[0m\n`
+    );
+
+    this.askrickValue1(rl);
   }
 
-  askRickValue(rl) {
+  askrickValue1(rl) {
     rl.question(
-      `Enter your value (0 to ${this.numBoxes - 1}):\nRick: `,
+      `Morty: Rick, enter your number [0,${
+        this.numBoxes - 1
+      }] so you don’t whine later that I cheated, alright?\nRick: `,
       (answer) => {
-        this.rickValue = parseInt(answer);
+        this.rickValue1 = parseInt(answer);
 
         if (
-          isNaN(this.rickValue) ||
-          this.rickValue < 0 ||
-          this.rickValue >= this.numBoxes
+          isNaN(this.rickValue1) ||
+          this.rickValue1 < 0 ||
+          this.rickValue1 >= this.numBoxes
         ) {
           console.log(
-            `\x1b[1m\x1b[31mInvalid! Must be 0 to ${this.numBoxes - 1}\x1b[0m`
+            `\x1b[1m\x1b[31mInvalid! Must be [0 to ${this.numBoxes - 1}]\x1b[0m`
           );
-          return this.askRickValue(rl);
+          return this.askrickValue1(rl);
         }
-        this.prizeBox = (this.mortyValue + this.rickValue) % this.numBoxes;
+
+        this.prizeBox = (this.mortyValue1 + this.rickValue1) % this.numBoxes;
+        console.log(
+          `\nRick's value accepted: ${this.rickValue1}. We randomly generated the prizeBox together. Now... Find it!`
+        );
+
         this.askRickChoice(rl);
       }
     );
@@ -68,20 +90,20 @@ class GameEngine {
       `\nAvailable boxes: \x1b[48;2;255;165;0m\x1b[30m[ ${boxNumbers} ]\x1b[0m`
     );
 
-    /* _____________________ */
-    // console.log(this.prizeBox);
     rl.question(
-      `Which box do you choose (0 to ${this.numBoxes - 1})?\nRick: `,
+      `Which box do you choose [0 to ${this.numBoxes - 1}]?\nRick: `,
       (answer) => {
-        this.rickInitialChoice = parseInt(answer);
+        this.rickValue2 = parseInt(answer);
+
         if (
-          isNaN(this.rickInitialChoice) ||
-          this.rickInitialChoice < 0 ||
-          this.rickInitialChoice >= this.numBoxes
+          isNaN(this.rickValue2) ||
+          this.rickValue2 < 0 ||
+          this.rickValue2 >= this.numBoxes
         ) {
           console.log(`\x1b[1m\x1b[31mInvalid box number!\x1b[0m`);
           return this.askRickChoice(rl);
         }
+
         this.mortyRevealsBox(rl);
       }
     );
@@ -94,17 +116,13 @@ class GameEngine {
       mortyInstance = ClassicMorty;
     } else if (this.mortyType === "LazyMorty") {
       mortyInstance = LazyMorty;
-    } else {
-      console.log("\x1b[31mUnknown Morty type!\x1b[0m");
-      rl.close();
-      return;
     }
-    const { forOpening, toSave } = mortyInstance.chooseBoxes(
-      this.numBoxes,
-      this.rickInitialChoice,
-      this.prizeBox,
-      this.secretKey
-    );
+
+    const { forOpening, toSave, secretKey2, mortyValue2 } =
+      mortyInstance.chooseBoxes(this.numBoxes, this.rickValue2, this.prizeBox);
+
+    this.secretKey2 = secretKey2;
+    this.mortyValue2 = mortyValue2;
     this.toSave = toSave;
 
     const openedBoxes = forOpening.join(", ");
@@ -114,6 +132,7 @@ class GameEngine {
     console.log(
       `\nAvailable boxes: \x1b[48;2;255;165;0m\x1b[30m[ ${toSave} ]\x1b[0m`
     );
+
     this.askSwitch(rl);
   }
 
@@ -124,13 +143,11 @@ class GameEngine {
         const response = answer.toLowerCase().trim();
 
         if (response === "yes" || response === "y") {
-          const otherBox = this.toSave.find(
-            (box) => box !== this.rickInitialChoice
-          );
+          const otherBox = this.toSave.find((box) => box !== this.rickValue2);
           this.rickFinalChoice = otherBox;
           console.log(`\n🔄 Rick switched to box: ${this.rickFinalChoice}`);
         } else {
-          this.rickFinalChoice = this.rickInitialChoice;
+          this.rickFinalChoice = this.rickValue2;
           console.log(`\n✋ Rick stays with box: ${this.rickFinalChoice}`);
         }
 
@@ -141,7 +158,7 @@ class GameEngine {
 
   revealResult(rl) {
     const hasWon = this.rickFinalChoice === this.prizeBox;
-    const hasSwitched = this.rickFinalChoice !== this.rickInitialChoice;
+    const hasSwitched = this.rickFinalChoice !== this.rickValue2;
 
     if (this.rickFinalChoice === this.prizeBox) {
       console.log(
@@ -155,20 +172,23 @@ class GameEngine {
       );
     }
 
-    this.statistics.recordRound(hasSwitched, hasWon);
+    const openedBox =
+      (this.mortyValue2 + this.rickValue2) % (this.numBoxes - 1);
 
-    console.log("\n======= VERIFICATION =======");
-    console.log("\n✅ You can verify the HMAC to confirm the game was fair!");
-    console.log(`Morty's value: ${this.mortyValue}`);
-    console.log(`Rick's value: ${this.rickValue}`);
     console.log(
-      `Prize box: (${this.mortyValue} + ${this.rickValue}) % ${this.numBoxes} = ${this.prizeBox}`
+      "\n======= VERIFICATION =======",
+      `\nMy 1st random number was: ${this.mortyValue1}`,
+      `\nKEY1=\x1b[4m\x1b[34m${this.secretKey1}\x1b[0m`,
+      `\nSo the 1st fair number is - (${this.mortyValue1} + ${this.rickValue1}) % ${this.numBoxes} = ${this.prizeBox}`,
+
+      `\nMy 2nd random number was: ${this.mortyValue2}`,
+      `\nKEY1=\x1b[4m\x1b[34m${this.secretKey2}\x1b[0m`,
+      `\nSo the 2nd fair number (opened box) - (${this.mortyValue2} + ${
+        this.rickValue2
+      }) % ${this.numBoxes - 1} = ${openedBox}`
     );
-    console.log(`Secret key: ${this.secretKey}`);
-    console.log(`HMAC1: ${this.hmac1}`);
-    console.log(
-      `Verify: HMAC(${this.secretKey}, ${this.mortyValue}) = ${this.hmac1}`
-    );
+
+    this.statistics.recordRound(hasSwitched, hasWon);
 
     this.askPlayAgain(rl);
   }
@@ -193,7 +213,6 @@ class GameEngine {
         } else {
           console.log("\nMorty: Okay… uh, bye!\n");
 
-          // ✅ Показать финальную статистику
           this.statistics.display();
 
           rl.close();

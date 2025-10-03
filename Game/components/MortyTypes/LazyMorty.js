@@ -1,25 +1,32 @@
 const SecurityManagement = require("../SecurityManagement");
 
 class LazyMorty {
-  static chooseBoxes(totalBoxes, rickChoice, portalGunBox, secretKey) {
+  static chooseBoxes(totalBoxes, rickChoice, portalGunBox) {
+    const secretKey2 = SecurityManagement.generateSecretKey();
     const allBoxes = Array.from({ length: totalBoxes }, (_, i) => i);
-    const safeBoxes = allBoxes.filter(
+    let safeBoxes = allBoxes.filter(
       (n) => n !== rickChoice && n !== portalGunBox
     );
-    const forOpening = safeBoxes.slice(0, -1);
+    let forOpening;
     let toSave;
 
     if (rickChoice === portalGunBox) {
-      toSave = [rickChoice, safeBoxes[safeBoxes.length - 1]];
+      const lowestSafeBox = Math.min(...safeBoxes);
+      forOpening = safeBoxes.filter((n) => n !== lowestSafeBox);
+      toSave = [portalGunBox, lowestSafeBox];
     } else {
-      toSave = [rickChoice, portalGunBox].sort((a, b) => a - b);
+      forOpening = safeBoxes;
+      toSave = [rickChoice, portalGunBox];
     }
-    const mortyValue = forOpening.length > 0 ? forOpening[0] : safeBoxes[0];
-
-    const hmac2 = SecurityManagement.getHmac(secretKey, mortyValue.toString());
+    const mortyValue2 =
+      forOpening.length > 0 ? Math.min(...forOpening) : Math.min(...safeBoxes);
+    const hmac2 = SecurityManagement.getHmac(
+      secretKey2,
+      mortyValue2.toString()
+    );
     console.log(`HMAC2=\x1b[35m${hmac2}\x1b[0m`);
 
-    return { forOpening, toSave };
+    return { forOpening, toSave, secretKey2, mortyValue2 };
   }
 }
 
