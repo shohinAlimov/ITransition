@@ -1,37 +1,50 @@
 const SecurityManagement = require("../SecurityManagement");
 
 class ClassicMorty {
-  static chooseBoxes(totalBoxes, rickChoice, portalGunBox) {
-    const secretKey2 = SecurityManagement.generateSecretKey();
-    const allBoxes = Array.from({ length: totalBoxes }, (_, i) => i);
-    let forOpening;
-    let toSave;
-    let mortyValue2;
+  constructor(rickInitialChoice, numBoxes, prizeBox) {
+    this.rickInitialChoice = rickInitialChoice;
+    this.numBoxes = numBoxes;
+    this.prizeBox = prizeBox;
 
-    if (rickChoice === portalGunBox) {
-      const safeBoxes = allBoxes.filter((n) => n !== portalGunBox);
-      const randomNumber =
-        safeBoxes[
-          SecurityManagement.generateRandomNumber(safeBoxes.length - 1)
-        ];
-      forOpening = safeBoxes.filter((n) => n !== randomNumber);
-      toSave = [portalGunBox, randomNumber];
-      mortyValue2 = randomNumber;
-    } else {
-      forOpening = allBoxes.filter(
-        (n) => n !== rickChoice && n !== portalGunBox
-      );
-      toSave = [portalGunBox, rickChoice];
-      mortyValue2 = portalGunBox;
-    }
+    this.secretKey2 = null;
+    this.mortyValue2 = null;
+    this.hmac2 = null;
+  }
 
-    const hmac2 = SecurityManagement.getHmac(
-      secretKey2,
-      mortyValue2.toString()
+  generateHmac2() {
+    this.secretKey2 = SecurityManagement.generateSecretKey();
+
+    // Генерируем m2 в диапазоне [0, N-1)
+    this.mortyValue2 = SecurityManagement.generateRandomNumber(
+      this.numBoxes - 1
     );
-    console.log(`HMAC2=\x1b[4m\x1b[33m${hmac2}\x1b[0m`);
 
-    return { forOpening, toSave, secretKey2, mortyValue2 };
+    this.hmac2 = SecurityManagement.getHmac(
+      this.secretKey2,
+      this.mortyValue2.toString()
+    );
+
+    console.log("MORTYVALUE2 IS:", this.mortyValue2);
+    console.log(`Morty: HMAC2=${this.hmac2}`);
+
+    return {
+      hmac2: this.hmac2,
+      mortyValue2: this.mortyValue2,
+      secretKey2: this.secretKey2,
+    };
+  }
+
+  revealBox(rickValue2) {
+    const fairIndex = (this.mortyValue2 + rickValue2) % (this.numBoxes - 1);
+
+    const boxesExceptRick = Array.from(
+      { length: this.numBoxes },
+      (_, i) => i
+    ).filter((n) => n !== this.rickInitialChoice);
+
+    const boxToKeep = boxesExceptRick[fairIndex];
+
+    return boxToKeep;
   }
 }
 

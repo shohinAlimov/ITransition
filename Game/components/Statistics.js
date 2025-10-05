@@ -1,7 +1,8 @@
 const Table = require("cli-table3");
 
 class Statistics {
-  constructor() {
+  constructor(numBoxes) {
+    this.numBoxes = numBoxes;
     this.rounds = 0;
     this.switchedWins = 0;
     this.switchedGames = 0;
@@ -49,22 +50,17 @@ class Statistics {
       colWidths: [20, 20, 20],
     });
 
-    // Строка 1: Количество раундов
     table.push(["Rounds", this.switchedGames, this.stayedGames]);
-
-    // Строка 2: Количество побед
     table.push(["Wins", this.switchedWins, this.stayedWins]);
 
-    // Строка 3: Процент (оценка)
-    const switchEstimate = this.switchedGames > 0 ? "?" : "?";
-    const stayEstimate = this.stayedGames > 0 ? "?" : "?";
-
+    // Теоретические вероятности
+    const switchEstimate = ((this.numBoxes - 1) / this.numBoxes).toFixed(3);
+    const stayEstimate = (1 / this.numBoxes).toFixed(3);
     table.push(["P (estimate)", switchEstimate, stayEstimate]);
 
-    // Строка 4: Процент (точный)
+    // Фактические вероятности
     const switchExact = this.getSwitchWinRate().toFixed(3);
     const stayExact = this.getStayWinRate().toFixed(3);
-
     table.push(["P (exact)", switchExact, stayExact]);
 
     console.log(table.toString());
