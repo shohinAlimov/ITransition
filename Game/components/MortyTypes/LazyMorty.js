@@ -22,7 +22,6 @@ class LazyMorty {
       this.mortyValue2.toString()
     );
 
-    console.log("MORTYVALUE2 IS:", this.mortyValue2);
     console.log(`Morty: HMAC2=${this.hmac2}`);
 
     return {

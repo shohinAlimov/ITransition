@@ -28,6 +28,15 @@ class GameEngine {
     this.boxToKeep = null;
   }
 
+  validation(trimmed) {
+    // Проверка что строка состоит ТОЛЬКО из цифр
+    if (!/^\d+$/.test(trimmed)) {
+      console.log(`\x1b[1m\x1b[31mInvalid! Enter a valid number\x1b[0m`);
+      return false;
+    }
+    return true;
+  }
+
   start() {
     this.secretKey1 = SecurityManagement.generateSecretKey();
     this.mortyValue1 = SecurityManagement.generateRandomNumber(this.numBoxes);
@@ -50,13 +59,15 @@ class GameEngine {
     rl.question(
       `Morty: Rick, enter your number [0,${this.numBoxes}) so you don't whine later that I cheated, alright?\nRick: `,
       (answer) => {
-        this.rickValue1 = parseInt(answer);
+        const trimmed = answer.trim();
 
-        if (
-          isNaN(this.rickValue1) ||
-          this.rickValue1 < 0 ||
-          this.rickValue1 >= this.numBoxes
-        ) {
+        if (!this.validation(trimmed)) {
+          return this.askRickValue1(rl);
+        }
+
+        this.rickValue1 = parseInt(trimmed);
+
+        if (this.rickValue1 < 0 || this.rickValue1 >= this.numBoxes) {
           console.log(
             `\x1b[1m\x1b[31mInvalid! Must be [0 to ${this.numBoxes - 1}]\x1b[0m`
           );
@@ -73,10 +84,15 @@ class GameEngine {
     rl.question(
       `Morty: Okay, okay, I hid the gun. What's your guess [0,${this.numBoxes})?\nRick: `,
       (answer) => {
-        this.rickInitialChoice = parseInt(answer);
+        const trimmed = answer.trim();
+
+        if (!this.validation(trimmed)) {
+          return this.askRickBoxChoice(rl);
+        }
+
+        this.rickInitialChoice = parseInt(trimmed);
 
         if (
-          isNaN(this.rickInitialChoice) ||
           this.rickInitialChoice < 0 ||
           this.rickInitialChoice >= this.numBoxes
         ) {
@@ -121,13 +137,15 @@ class GameEngine {
         this.numBoxes - 1
       }), and, uh, don't say I didn't play fair, okay?\nRick: `,
       (answer) => {
-        this.rickValue2 = parseInt(answer);
+        const trimmed = answer.trim();
 
-        if (
-          isNaN(this.rickValue2) ||
-          this.rickValue2 < 0 ||
-          this.rickValue2 >= this.numBoxes - 1
-        ) {
+        if (!this.validation(trimmed)) {
+          return this.askRickValue2(rl);
+        }
+
+        this.rickValue2 = parseInt(trimmed);
+
+        if (this.rickValue2 < 0 || this.rickValue2 >= this.numBoxes - 1) {
           console.log(
             `\x1b[1m\x1b[31mInvalid! Must be [0 to ${this.numBoxes - 2}]\x1b[0m`
           );
@@ -141,6 +159,9 @@ class GameEngine {
           (_, i) => i
         ).filter((n) => n !== this.rickInitialChoice && n !== this.boxToKeep);
 
+        console.log(
+          `\nMorty opened boxes [${boxesToOpen.join(", ")}] - empty!\n`
+        );
         console.log(
           `Morty: I'm keeping the box you chose, I mean ${this.rickInitialChoice}, and the box ${this.boxToKeep}.`
         );
@@ -157,7 +178,13 @@ class GameEngine {
     rl.question(
       `Morty: You can switch your box to ${otherBox} (enter 0), or, you know, stick with ${this.rickInitialChoice} (enter 1).\nRick: `,
       (answer) => {
-        const choice = parseInt(answer);
+        const trimmed = answer.trim();
+
+        if (!this.validation(trimmed)) {
+          return this.askSwitch(rl, boxToKeep);
+        }
+
+        const choice = parseInt(trimmed);
 
         if (choice !== 0 && choice !== 1) {
           console.log(`\x1b[1m\x1b[31mInvalid! Enter 0 or 1\x1b[0m`);
