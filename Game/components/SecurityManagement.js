@@ -6,9 +6,7 @@ class SecurityManagement {
   }
 
   static generateRandomNumber(max) {
-    const randomBytes = crypto.randomBytes(4);
-    const randomValue = randomBytes.readUInt32BE(0);
-    return (randomValue % max) + 1;
+    return crypto.randomInt(1, parseInt(max) + 1);
   }
 
   static getHmac(secretKey, message) {
