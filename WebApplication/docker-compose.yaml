@@ -1,0 +1,117 @@
+services: # Services = containers that will run
+  postgres: # PostgreSQL Database Service
+    # Image to use from Docker Hub (postgres version 15)
+    # Docker will automatically download this if not present
+    image: postgres:latest
+
+    # Custom name for the container (easier to identify)
+    container_name: postgres-db
+
+    # Restart policy: always restart if container stops
+    restart: always
+
+    # Environment variables passed to PostgreSQL container
+    environment:
+      # Database username - ${VAR} means read from .env file
+      POSTGRES_USER: ${POSTGRES_USER}
+
+      # Database password - NEVER hardcode, use .env file
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # Database name to create on first run
+      POSTGRES_DB: ${POSTGRES_DB}
+
+    # Port mapping: host_port:container_port
+    # 5432 is PostgreSQL default port
+    # Left side (5432) = your computer's port
+    # Right side (5432) = container's port
+    ports:
+      - "5432:5432"
+
+    # Volumes = persistent storage (data survives container restart)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+
+    # Networks allow containers to communicate
+    # Containers in same network can talk to each other
+    networks:
+      - app-network
+
+  server: # Backend Server Service (Node.js/Express)
+    build: ./server # Build image from Dockerfile in ./server folder
+    container_name: backend-api # Container name
+    restart: always # Always restart on failure
+
+    environment: # Environment variables for backend
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      PORT: 5000 # Port where backend server runs inside container
+
+    ports: # Port mapping for backend. You access backend at http://localhost:5000
+      - "5000:5000"
+
+    depends_on:
+      - postgres
+
+    # Connect to same network as postgres
+    networks:
+      - app-network
+
+    # Volumes for development
+    volumes:
+      # Mount source code so changes reflect immediately (hot reload)
+      - ./server:/app
+
+      # Prevent node_modules from being overwritten
+      # Use container's node_modules, not host's
+      - /app/node_modules
+
+  client: # Frontend Client Service (React)
+    # Build from Dockerfile in ./client folder
+    build: ./client
+
+    container_name: frontend-app
+
+    restart: always
+
+    environment:
+      # Backend API URL that frontend will call
+      # From browser, this is localhost (not 'server')
+      # Because browser runs on your computer, not in Docker
+      REACT_APP_API_URL: http://localhost:5000
+
+    # Frontend runs on port 3000
+    ports:
+      - "5173:5173"
+
+    # Start after server is running
+    depends_on:
+      - server
+
+    networks:
+      - app-network
+
+    # Hot reload for development
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+
+# Networks definition
+networks:
+  # Bridge network allows containers to communicate
+  app-network:
+    # Bridge = default Docker network type
+    # Containers can reach each other by service name
+    driver: bridge
+
+# Volumes definition
+volumes:
+  # Named volume for PostgreSQL data
+  # Docker manages where this is stored on your computer
+  # Data persists even if you stop/remove containers
+  postgres_data:
