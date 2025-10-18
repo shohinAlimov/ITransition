@@ -1,6 +1,11 @@
 import type { Request, Response, NextFunction } from "express";
+import { AuthSuccessResponse, ErrorResponse } from "../types/ResponseTypes";
 
-export const validInfo = (req: Request, res: Response, next: NextFunction) => {
+export const validInfo = (
+  req: Request,
+  res: Response<AuthSuccessResponse | ErrorResponse>,
+  next: NextFunction
+) => {
   const { email, name, password } = req.body;
 
   function validateEmail(email: string): boolean {
@@ -11,15 +16,23 @@ export const validInfo = (req: Request, res: Response, next: NextFunction) => {
 
   if (req.path === "/register") {
     if (![email, name, password].every(Boolean)) {
-      return res.status(401).json("Missing Credentials!");
+      return res
+        .status(401)
+        .json({ success: false, message: "Missing Credentials!" });
     } else if (!validateEmail(email)) {
-      return res.status(401).json("Invalid Email!");
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid Email!" });
     }
   } else if (req.path === "/login") {
     if (![email, password].every(Boolean)) {
-      return res.status(401).json("Missing Credentials!");
+      return res
+        .status(401)
+        .json({ success: false, message: "Missing Credentials!" });
     } else if (!validateEmail(email)) {
-      return res.status(401).json("Invalid Email!");
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid Email!" });
     }
   }
 
